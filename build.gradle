@@ -1,0 +1,100 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        // If using a Maven proxy, put the property settings in
+        // ~/.gradle/gradle.properties for default_proxy_url,
+        // default_proxy_username and default_proxy_password.
+        if (project.hasProperty("default_proxy_url")) {
+            maven {
+                url project.property("default_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
+            }
+        }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "io.spring.gradle:dependency-management-plugin:${spring_depmgmt_version}"
+        classpath "org.grails:grails-gradle-plugin:${grails_gradle_version}"
+    }
+}
+
+apply plugin: 'grails'
+apply plugin: 'project-report'
+apply plugin: "io.spring.dependency-management"
+apply plugin: 'maven-publish'
+
+group = 'edu.berkeley.calnet.grails.plugins'
+version = '0.2-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+grails {
+    grailsVersion = '2.5.4'
+    groovyVersion = '2.4.4'
+}
+
+repositories {
+    mavenLocal()
+    // If using a Maven proxy, put the property settings in
+    // ~/.gradle/gradle.properties for default_proxy_url,
+    // default_proxy_username and default_proxy_password.
+    if (project.hasProperty("default_proxy_url")) {
+        maven {
+            url project.property("default_proxy_url")
+            credentials {
+                username project.property("default_proxy_username")
+                password project.property("default_proxy_password")
+            }
+        }
+    }
+    jcenter()
+    grails.central()
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "edu.berkeley.calnet:gradle-grails-bom:${grails.grailsVersion}"
+    }
+}
+
+dependencies {
+    /*****************************************************************
+     * BEGIN STANDARD GRAILS DEPENDENCIES FROM gradle-grails-bom
+     *****************************************************************/
+    provided 'javax.servlet:javax.servlet-api'
+
+    test 'org.spockframework:spock-core'
+    /*****************************************************************
+     * END STANDARD GRAILS DEPENDENCIES FROM gradle-grails-bom
+     *****************************************************************/
+}
+
+// publishing with './gradlew publish'
+publish.dependsOn assemble
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "groovy-sql-util"
+            artifact("${project.name}-${project.version}.zip")
+        }
+    }
+
+    repositories {
+        maven {
+            // Put the property settings in ~/.gradle/gradle.properties for
+            // default_deploy_url, default_deploy_grails_plugin_repo
+            // default_deploy_username and default_deploy_password.
+            url "${project.property('default_deploy_url')}/${default_deploy_grails_plugin_repo}"
+            credentials {
+                username project.property("default_deploy_user")
+                password project.property("default_deploy_password")
+            }
+        }
+    }
+}

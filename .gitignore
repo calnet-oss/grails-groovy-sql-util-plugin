@@ -9,3 +9,5 @@ atlassian-ide-plugin.xml
 .project
 *.zip
 *.sha1
+.gradle
+build
