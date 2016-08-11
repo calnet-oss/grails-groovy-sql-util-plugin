@@ -77,6 +77,7 @@ dependencies {
 
 // publishing with './gradlew publish'
 publish.dependsOn assemble
+publishToMavenLocal.dependsOn assemble
 publishing {
     publications {
         maven(MavenPublication) {
