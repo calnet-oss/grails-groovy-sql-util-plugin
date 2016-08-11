@@ -25,7 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 class GroovySqlUtilGrailsPlugin {
-    def group = "edu.berkeley.calnet.plugins"
+    def group = "edu.berkeley.calnet.grails.plugins"
     // the plugin version
     def version = "0.2-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
