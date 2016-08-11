@@ -1,0 +1,17 @@
+This software uses third-party software that may be distributed under
+licenses different than the two-clause BSD license.
+
+#1) Gradle
+
+Gradle is licensed under the Apache License, Version 2.0:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+See http://gradle.org/license/ for more information.
+
+Files that are covered by this license (may not be an exhaustive list):
+    Everything in gradle subdirectory
+    gradlew
+    gradlew.bat
+
+Gradle source code is available for download at http://gradle.org/.
