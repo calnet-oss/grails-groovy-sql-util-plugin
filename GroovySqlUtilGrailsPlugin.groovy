@@ -27,7 +27,7 @@
 class GroovySqlUtilGrailsPlugin {
     def group = "edu.berkeley.calnet.grails.plugins"
     // the plugin version
-    def version = "0.2-SNAPSHOT"
+    def version = "1.0.0-SNAPSHOT" // !!! Change in build.gradle too
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.4 > *"
     // resources that are excluded from plugin packaging
@@ -43,7 +43,7 @@ Grails Groovy Sql utility plugin.
 '''
 
     // URL to the plugin's documentation
-    //def documentation = "http://grails.org/plugin/groovy-sql-util"
+    def documentation = "https://github.com/calnet-oss/grails-groovy-sql-util-plugin/"
 
     // Extra (optional) plugin metadata
 
@@ -57,10 +57,10 @@ Grails Groovy Sql utility plugin.
 //    def developers = [ [ name: "Joe Bloggs", email: "joe@bloggs.net" ]]
 
     // Location of the plugin's issue tracker.
-//    def issueManagement = [ system: "JIRA", url: "http://jira.grails.org/browse/GPMYPLUGIN" ]
+    def issueManagement = [ system: "GitHub", url: "https://github.com/calnet-oss/grails-groovy-sql-util-plugin/issues" ]
 
     // Online location of the plugin's browseable source code.
-//    def scm = [ url: "http://svn.codehaus.org/grails-plugins/" ]
+    def scm = [ url: "https://github.com/calnet-oss/grails-groovy-sql-util-plugin" ]
 
     def doWithWebDescriptor = { xml ->
     }

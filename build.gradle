@@ -54,7 +54,7 @@ apply plugin: "io.spring.dependency-management"
 apply plugin: 'maven-publish'
 
 group = 'edu.berkeley.calnet.grails.plugins'
-version = '0.2-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
+version = '1.0.0-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
