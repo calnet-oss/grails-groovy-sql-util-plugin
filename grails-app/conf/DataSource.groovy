@@ -4,6 +4,7 @@ dataSource {
     driverClassName = "org.h2.Driver"
     username = "sa"
     password = ""
+    autoCommit = false
 }
 
 // environment specific settings
