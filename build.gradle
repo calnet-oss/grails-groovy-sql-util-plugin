@@ -45,13 +45,15 @@ buildscript {
     dependencies {
         classpath "io.spring.gradle:dependency-management-plugin:${spring_depmgmt_version}"
         classpath "org.grails:grails-gradle-plugin:${grails_gradle_version}"
+        classpath "edu.berkeley.calnet.gradle.plugins:gradle-grails-maven-publish-plugin:${grails_maven_publish_version}"
     }
 }
 
 apply plugin: 'grails'
+apply plugin: 'edu.berkeley.calnet.grails-maven-publish'
+apply plugin: 'maven-publish'
 apply plugin: 'project-report'
 apply plugin: "io.spring.dependency-management"
-apply plugin: 'maven-publish'
 
 group = 'edu.berkeley.calnet.grails.plugins'
 version = '1.1.0-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
@@ -107,8 +109,9 @@ publishToMavenLocal.dependsOn assemble
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId "groovy-sql-util"
-            artifact("${project.name}-${project.version}.zip")
+            grailsMavenPublish.addGrailsComponent(project)
+            from components.grails
+            grailsMavenPublish.fixPom(configurations, pom)
         }
     }
 
