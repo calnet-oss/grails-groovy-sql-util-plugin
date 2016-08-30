@@ -52,6 +52,14 @@ class SqlServiceIntegrationSpec extends IntegrationSpec {
         sql.execute("DROP TABLE IF EXISTS Test" as String)
     }
 
+    void "test getCurrentTransactionSql for a dataSource"() {
+        when:
+        Sql sql = sqlService.getCurrentTransactionSql(dataSource)
+
+        then:
+        sql
+    }
+
     void "test withNewTransaction boundary"() {
         when:
         // Must insert something for h2 to establish a transaction_id

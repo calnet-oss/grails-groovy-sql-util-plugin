@@ -32,6 +32,7 @@ import groovy.sql.Sql
 import org.codehaus.groovy.grails.orm.support.GrailsTransactionTemplate
 import org.codehaus.groovy.grails.transaction.ChainedTransactionManager
 import org.codehaus.groovy.grails.transaction.GrailsTransactionAttribute
+import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.TransactionStatus
@@ -39,14 +40,27 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.interceptor.RollbackRuleAttribute
 import org.springframework.transaction.support.DefaultTransactionStatus
 
+import javax.sql.DataSource
 import java.sql.Connection
 
 class SqlService {
     // handle at method level with @Transactional annotations
     static transactional = false
 
-    Sql getCurrentTransactionSql(DefaultTransactionStatus targetTransactionStatus) {
-        return new Sql(getCurrentTransactionConnection(targetTransactionStatus))
+    @Transactional(propagation = Propagation.MANDATORY)
+    Sql getCurrentTransactionSql(DataSource dataSource) {
+        DataSourceTransactionManager txMgr = null
+        if (transactionManager instanceof ChainedTransactionManager) {
+            txMgr = (DataSourceTransactionManager) ((ChainedTransactionManager) transactionManager).transactionManagers.find { PlatformTransactionManager mgr ->
+                mgr instanceof DataSourceTransactionManager && ((DataSourceTransactionManager) mgr).dataSource == dataSource
+            }
+        } else if (transactionManager instanceof DataSourceTransactionManager) {
+            txMgr = (DataSourceTransactionManager) transactionManager
+        } else {
+            throw new RuntimeException("Couldn't find a transaction manager that belongs to the dataSource")
+        }
+
+        return txMgr ? getCurrentTransactionSql(txMgr) : null
     }
 
     private Connection getCurrentTransactionConnection(DefaultTransactionStatus targetTransactionStatus) {
@@ -58,6 +72,9 @@ class SqlService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     Sql getCurrentTransactionSql(PlatformTransactionManager targetTransactionManager) {
+        if (targetTransactionManager instanceof ChainedTransactionManager) {
+            throw new RuntimeException("The passed in transaction manager can't be a ChainedTransactionManager.  Instead, pass in the native transaction manager for the dataSource or use getCurrentTransactionSql(dataSource).")
+        }
         // transactionManager and transactionStatus are injected into the
         // method by the @Transactional annotation
         DefaultTransactionStatus targetTransactionStatus
@@ -83,6 +100,10 @@ class SqlService {
         return getCurrentTransactionSql(targetTransactionStatus)
     }
 
+    Sql getCurrentTransactionSql(DefaultTransactionStatus targetTransactionStatus) {
+        return new Sql(getCurrentTransactionConnection(targetTransactionStatus))
+    }
+
     /**
      * If using a ChainedTransactionManager, find the transaction status for
      * a particular transaction manager within the chain.
@@ -93,7 +114,7 @@ class SqlService {
      *        for the ChainedTransactionManager.
      * @return The current TransactionStatus for the targetTransactionManager.
      */
-    protected DefaultTransactionStatus findMatchingTransactionStatus(PlatformTransactionManager targetTransactionManager, TransactionStatus chainedTransactionStatus) {
+    private DefaultTransactionStatus findMatchingTransactionStatus(PlatformTransactionManager targetTransactionManager, TransactionStatus chainedTransactionStatus) {
         for (Map.Entry<PlatformTransactionManager, TransactionStatus> mapEntry : chainedTransactionStatus.transactionStatuses) {
             if (mapEntry.key == targetTransactionManager) {
                 TransactionStatus foundStatus = mapEntry.value
