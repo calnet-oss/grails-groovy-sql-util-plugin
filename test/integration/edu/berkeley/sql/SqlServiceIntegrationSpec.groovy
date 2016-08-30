@@ -35,8 +35,6 @@ import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
 
 class SqlServiceIntegrationSpec extends IntegrationSpec {
-    static transactional = false
-
     GrailsApplication grailsApplication
     DataSource dataSource
     SqlService sqlService
@@ -44,125 +42,54 @@ class SqlServiceIntegrationSpec extends IntegrationSpec {
     def setup() {
         def sql = new Sql(dataSource)
         sql.withTransaction {
-            try {
-                sql.execute("DROP TABLE Test")
-            }
-            catch (Throwable e) {
-            }
-        }
-        sql.withTransaction {
-            sql.execute("CREATE TABLE Test(key INTEGER)")
+            sql.execute("DROP TABLE IF EXISTS Test" as String)
+            sql.execute("CREATE TABLE Test(key INTEGER)" as String)
         }
     }
 
     def cleanup() {
         def sql = new Sql(dataSource)
-        sql.withTransaction {
-            try {
-                sql.execute("DROP TABLE Test")
-            }
-            catch (Throwable e) {
+        sql.execute("DROP TABLE IF EXISTS Test" as String)
+    }
+
+    void "test withNewTransaction boundary"() {
+        when:
+        // Must insert something for h2 to establish a transaction_id
+        assert currentSql.executeUpdate("INSERT INTO Test VALUES(1)" as String)
+        def startingTxId = currentSql.firstRow("SELECT transaction_id() AS txId" as String).txId
+        def newTxId = sqlService.withNewTransaction(transactionManager) {
+            assert currentSql.executeUpdate("INSERT INTO Test VALUES(2)" as String)
+            return currentSql.firstRow("SELECT transaction_id() AS txId" as String).txId
+        }
+        def endingTxId = currentSql.firstRow("SELECT transaction_id() AS txId" as String).txId
+
+        then:
+        startingTxId != newTxId
+        startingTxId == endingTxId
+    }
+
+    void "test withNewTransaction exception rollback"() {
+        when:
+        try {
+            sqlService.withNewTransaction(transactionManager) {
+                assert currentSql.executeUpdate("INSERT INTO Test VALUES(2)" as String)
+                throw new Exception("purposely thrown exception")
             }
         }
-    }
-
-    void "test transactionManager COMMIT"() {
-        when:
-            execute(transactionManager) { Sql sql ->
-                sql.execute("TRUNCATE TABLE Test")
-            }
-            execute(transactionManager) { Sql sql ->
-                sql.execute("INSERT INTO Test VALUES(1)")
-            }
-            int count = -1
-            executeGuaranteedNewTransaction { Sql sql ->
-                count = sql.firstRow("SELECT count(*) AS count FROM Test").count
-            }
+        catch (Exception e) {
+            assert e.message == "purposely thrown exception"
+        }
+        def rowCount = currentSql.firstRow("SELECT count(*) AS count FROM Test" as String).count
 
         then:
-            count == 1
+        rowCount == 0
     }
 
-    void "test transactionManager ROLLBACK"() {
-        when:
-            execute(transactionManager) { Sql sql ->
-                sql.execute("TRUNCATE TABLE Test")
-            }
-            try {
-                execute(transactionManager) { Sql sql ->
-                    sql.execute("INSERT INTO Test VALUES(1)")
-                    throw new RuntimeException("purposeful rollback")
-                }
-            }
-            catch (Exception e) {
-                log.info("exception thrown as expected")
-            }
-            int count = -1
-            executeGuaranteedNewTransaction { Sql sql ->
-                count = sql.firstRow("SELECT count(*) AS count FROM Test").count
-            }
-
-        then:
-            count == 0
+    private PlatformTransactionManager getTransactionManager() {
+        return grailsApplication.mainContext.getBean("transactionManager", PlatformTransactionManager)
     }
 
-    /**
-     * We would except that a method with REQUIRES_NEW that throws an exception
-     * will rollback any writes it did in that method.
-     *
-     * If this doesn't happen, we may have a data source that doesn't support
-     * nested transactions and is silently ignoring REQUIRES_NEW, which is bad.
-     */
-    void "test that second inner REQUIRES_NEW rolls back after exception"() {
-        when:
-            execute(transactionManager) { Sql sql ->
-                sql.execute("TRUNCATE TABLE Test")
-            }
-            execute(transactionManager) { Sql sql ->
-                // Here's the good transaction
-                sql.execute("INSERT INTO Test VALUES(1)")
-
-                try {
-                    execute(transactionManager) { Sql sql2 ->
-                        // Here's the bad transaction that should be rolled back
-                        // (i.e., the following insert should be rolled back.)
-                        sql2.execute("INSERT INTO Test VALUES(2)")
-                        throw new RuntimeException("purposeful rollback")
-                    }
-                }
-                catch (Exception e) {
-                    log.info("exception thrown as expected")
-                }
-            }
-            int count = -1
-            int key = 0
-            executeGuaranteedNewTransaction { Sql sql ->
-                count = sql.firstRow("SELECT count(*) AS count FROM Test").count
-                key = sql.firstRow("SELECT key FROM Test").key
-            }
-
-        then:
-            // the first insert should have been committed
-            // the second insert should have been rolled back
-            // If count == 2, then we have a data source without nested transaction support that is ignoring nested REQUIRES_NEWs.
-            count == 1
-            // the key of the committed row should also be 1
-            key == 1
-    }
-
-    void execute(PlatformTransactionManager targetTransactionManager, Closure closure) {
-        sqlService.executeNewTransaction(targetTransactionManager, closure)
-    }
-
-    void executeGuaranteedNewTransaction(Closure closure) {
-        sqlService.executeGuaranteedNewTransaction(getNewSessionSql(), closure)
-    }
-
-    Sql getNewSessionSql() {
-        return new Sql(dataSource)
-    }
-
-    PlatformTransactionManager getTransactionManager() {
-        return grailsApplication.mainContext.getBean("transactionManager")
+    private Sql getCurrentSql() {
+        return sqlService.getCurrentTransactionSql(transactionManager)
     }
 }
