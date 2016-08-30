@@ -49,7 +49,9 @@ class SqlServiceIntegrationSpec extends IntegrationSpec {
 
     def cleanup() {
         def sql = new Sql(dataSource)
-        sql.execute("DROP TABLE IF EXISTS Test" as String)
+        sql.withTransaction {
+            sql.execute("DROP TABLE IF EXISTS Test" as String)
+        }
     }
 
     void "test getCurrentTransactionSql for a dataSource"() {
