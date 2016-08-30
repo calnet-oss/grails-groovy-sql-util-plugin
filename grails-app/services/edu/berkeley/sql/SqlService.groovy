@@ -29,33 +29,38 @@ package edu.berkeley.sql
 
 import grails.transaction.Transactional
 import groovy.sql.Sql
-
-//import org.springframework.transaction.annotation.Transactional
+import org.codehaus.groovy.grails.orm.support.GrailsTransactionTemplate
 import org.codehaus.groovy.grails.transaction.ChainedTransactionManager
+import org.codehaus.groovy.grails.transaction.GrailsTransactionAttribute
+import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.TransactionStatus
 import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.interceptor.RollbackRuleAttribute
 import org.springframework.transaction.support.DefaultTransactionStatus
 
+import javax.sql.DataSource
 import java.sql.Connection
 
 class SqlService {
     // handle at method level with @Transactional annotations
     static transactional = false
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception)
-    void executeNewTransaction(PlatformTransactionManager _transactionManager, Closure closure) {
-        closure(getCurrentTransactionSql(_transactionManager))
-    }
-
-    // We want to open our own managed transaction, so ensure there isn't a
-    // managed transaction already active.
-    @Transactional(propagation = Propagation.NEVER)
-    void executeGuaranteedNewTransaction(Sql sql, Closure closure) {
-        // Use Sql-based transaction to guarantee we are opening a new transaction here.
-        sql.withTransaction { Connection conn ->
-            closure(new Sql(conn))
+    @Transactional(propagation = Propagation.MANDATORY)
+    Sql getCurrentTransactionSql(DataSource dataSource) {
+        DataSourceTransactionManager txMgr = null
+        if (transactionManager instanceof ChainedTransactionManager) {
+            txMgr = (DataSourceTransactionManager) ((ChainedTransactionManager) transactionManager).transactionManagers.find { PlatformTransactionManager mgr ->
+                mgr instanceof DataSourceTransactionManager && ((DataSourceTransactionManager) mgr).dataSource == dataSource
+            }
+        } else if (transactionManager instanceof DataSourceTransactionManager) {
+            txMgr = (DataSourceTransactionManager) transactionManager
+        } else {
+            throw new RuntimeException("Couldn't find a transaction manager that belongs to the dataSource")
         }
+
+        return txMgr ? getCurrentTransactionSql(txMgr) : null
     }
 
     private Connection getCurrentTransactionConnection(DefaultTransactionStatus targetTransactionStatus) {
@@ -65,21 +70,23 @@ class SqlService {
         return conn
     }
 
-    Sql getCurrentTransactionSql(DefaultTransactionStatus targetTransactionStatus) {
-        return new Sql(getCurrentTransactionConnection(targetTransactionStatus))
-    }
-
     @Transactional(propagation = Propagation.MANDATORY)
     Sql getCurrentTransactionSql(PlatformTransactionManager targetTransactionManager) {
-        // transactionManager and transactionStatus is injected into the method by the @Transactional annotation
+        if (targetTransactionManager instanceof ChainedTransactionManager) {
+            throw new RuntimeException("The passed in transaction manager can't be a ChainedTransactionManager.  Instead, pass in the native transaction manager for the dataSource or use getCurrentTransactionSql(dataSource).")
+        }
+        // transactionManager and transactionStatus are injected into the
+        // method by the @Transactional annotation
         DefaultTransactionStatus targetTransactionStatus
         if (transactionManager instanceof ChainedTransactionManager) {
             targetTransactionStatus = findMatchingTransactionStatus(targetTransactionManager, transactionStatus)
         } else {
             // not a ChainedTransactionManager.
-            // confirm targetTransactionManager is the same as the injected transactionManager
+            // confirm targetTransactionManager is the same as the injected
+            // transactionManager
             if (targetTransactionManager == transactionManager) {
-                // use the injected transactionStatus for the main transactionManager
+                // use the injected transactionStatus for the main
+                // transactionManager
                 if (transactionStatus instanceof DefaultTransactionStatus) {
                     targetTransactionStatus = transactionStatus
                 } else {
@@ -93,16 +100,22 @@ class SqlService {
         return getCurrentTransactionSql(targetTransactionStatus)
     }
 
+    Sql getCurrentTransactionSql(DefaultTransactionStatus targetTransactionStatus) {
+        return new Sql(getCurrentTransactionConnection(targetTransactionStatus))
+    }
+
     /**
-     * If using a ChainedTransactionManager, find the transaction status for a particular transaction manager within the chain.
+     * If using a ChainedTransactionManager, find the transaction status for
+     * a particular transaction manager within the chain.
      *
-     * @param targetTransactionManager The PlatformTransactionManager instance you would like the status for.
-     * @param chainedTransactionStatus This is the current TransactionStatus for the ChainedTransactionManager.
+     * @param targetTransactionManager The PlatformTransactionManager
+     *        instance you would like the status for.
+     * @param chainedTransactionStatus This is the current TransactionStatus
+     *        for the ChainedTransactionManager.
      * @return The current TransactionStatus for the targetTransactionManager.
      */
-    protected DefaultTransactionStatus findMatchingTransactionStatus(PlatformTransactionManager targetTransactionManager, TransactionStatus chainedTransactionStatus) {
+    private DefaultTransactionStatus findMatchingTransactionStatus(PlatformTransactionManager targetTransactionManager, TransactionStatus chainedTransactionStatus) {
         for (Map.Entry<PlatformTransactionManager, TransactionStatus> mapEntry : chainedTransactionStatus.transactionStatuses) {
-            log.info("Checking ${mapEntry.key} and ${targetTransactionManager}")
             if (mapEntry.key == targetTransactionManager) {
                 TransactionStatus foundStatus = mapEntry.value
                 if (foundStatus instanceof DefaultTransactionStatus) {
@@ -113,5 +126,73 @@ class SqlService {
             }
         }
         throw new RuntimeException("Could not find a transaction manager within the chain that matches $targetTransactionManager")
+    }
+
+    /**
+     * Uses a GrailsTransactionTemplate to execute a closure within its own
+     * bounded transaction.  The transaction is guaranteed to be new upon
+     * entrance and be completed (committed or rolled back) upon exit.  The
+     * Closure takes one parameter: a TransactionStatus object.  All
+     * Throwables from the closure cause a rollback and they are rethrown.
+     *
+     * @param txMgr The transaction manager to run the transaction within.
+     * @param closure A Closure to execute within the transaction.
+     * @return The return value from the closure.
+     */
+    Object withNewTransaction(PlatformTransactionManager txMgr, Closure closure) {
+        return withNewTransaction(txMgr, getTransactionAttributeForNewTransaction(), closure)
+    }
+
+    /**
+     * Uses a GrailsTransactionTemplate to execute a closure within its own
+     * bounded transaction.  The transaction is guaranteed to be new upon
+     * entrance and be completed (committed or rolled back) upon exit.  The
+     * Closure takes one parameter: a TransactionStatus object.  The
+     * txAttribute indicates which Throwable types cause a rollback.  All
+     * Throwables are rethrown no matter whether a rollback occurred or not.
+     *
+     * @param txMgr The transaction manager to run the transaction within.
+     * @param txAttribute Configures transaction behavior.
+     * @param closure A Closure to execute within the transaction.
+     * @return The return value from the closure.
+     */
+    Object withNewTransaction(PlatformTransactionManager txMgr, GrailsTransactionAttribute txAttribute, Closure closure) {
+        GrailsTransactionTemplate txTemplate = new GrailsTransactionTemplate(txMgr, txAttribute)
+        TransactionStatus txStatus = null
+        try {
+            Object result = txTemplate.execute { TransactionStatus status ->
+                // upon entrance: guaranteed to be new
+                assert status.newTransaction
+                txStatus = status
+                try {
+                    return closure.call(txStatus)
+                }
+                catch (Throwable t) {
+                    if (txAttribute.rollbackOn(t)) {
+                        status.setRollbackOnly()
+                    }
+                    throw t
+                }
+            }
+            // after exit: guaranteed to be completed
+            assert txStatus?.completed
+            return result
+        }
+        catch (Throwable t) {
+            // If the TransactionAttribute is configured to rollback on this
+            // throwable type, then the transaction template should have
+            // already marked it for rollback on execute closure exit.
+            assert txStatus?.completed
+            if (txAttribute.rollbackOn(t)) {
+                assert txStatus.rollbackOnly
+            }
+            throw t
+        }
+    }
+
+    protected static GrailsTransactionAttribute getTransactionAttributeForNewTransaction() {
+        GrailsTransactionAttribute txAttribute = new GrailsTransactionAttribute(TransactionDefinition.PROPAGATION_REQUIRES_NEW, [new RollbackRuleAttribute(Throwable)])
+        txAttribute.inheritRollbackOnly = true
+        return txAttribute
     }
 }
