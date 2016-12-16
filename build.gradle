@@ -56,7 +56,7 @@ apply plugin: 'project-report'
 apply plugin: "io.spring.dependency-management"
 
 group = 'edu.berkeley.calnet.grails.plugins'
-version = '1.2.0-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
+version = '1.2.1-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -103,15 +103,41 @@ dependencies {
      *****************************************************************/
 }
 
+grailsMavenPublish.addJavaComponent(project)
+
+jar {
+    metaInf {
+        from "plugin.xml"
+        rename "plugin.xml", "grails-plugin.xml"
+    }
+}
+
+task sourceJar(type: Jar) {
+    from "src/java"
+    from "src/groovy"
+    metaInf {
+        from "plugin.xml"
+        rename "plugin.xml", "grails-plugin.xml"
+    }
+}
+
 // publishing with './gradlew publish'
 publish.dependsOn assemble
 publishToMavenLocal.dependsOn assemble
 publishing {
     publications {
-        maven(MavenPublication) {
+        // zip file
+        mavenGrails(MavenPublication) {
             grailsMavenPublish.addGrailsComponent(project)
             from components.grails
             grailsMavenPublish.fixPom(configurations, pom)
+        }
+
+        // jar and sources
+        mavenJava(MavenPublication) {
+            from components.java
+            grailsMavenPublish.fixPom(configurations, pom)
+            artifact sourceJar { classifier "sources" }
         }
     }
 

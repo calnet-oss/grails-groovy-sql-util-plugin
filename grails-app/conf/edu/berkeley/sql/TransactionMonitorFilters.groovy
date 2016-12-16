@@ -63,7 +63,9 @@ class TransactionMonitorFilters implements ApplicationContextAware {
         registerSelf((GenericApplicationContext) applicationContext)
 
         if (!logger) {
-            logger = log
+            if (hasProperty("log")) {
+                logger = properties.log
+            }
         }
 
         initializeFilters()
