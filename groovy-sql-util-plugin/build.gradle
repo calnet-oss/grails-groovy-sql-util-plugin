@@ -1,11 +1,6 @@
 apply plugin:"org.grails.grails-plugin"
 apply plugin: "maven-publish"
 
-repositories {
-    mavenLocal()
-    maven { url "https://repo.grails.org/grails/core" }
-}
-
 dependencyManagement {
     imports {
         mavenBom "org.grails:grails-bom:$grailsVersion"
@@ -15,8 +10,8 @@ dependencyManagement {
 
 dependencies {
     provided 'javax.servlet:javax.servlet-api'
-    compile "org.grails:grails-core"
-    compile "org.grails:grails-dependencies"
+    compileOnly "org.grails:grails-core"
+    compileOnly "org.grails:grails-dependencies"
     provided "org.grails:grails-plugin-services"
 }
 
@@ -29,6 +24,7 @@ jar {
 }
 task sourceJar(type: Jar) {
     from sourceSets.main.allGroovy
+    from { ["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"] }
 }
 // publishing with './gradlew publish'
 publish.dependsOn assemble
