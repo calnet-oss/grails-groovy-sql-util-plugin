@@ -38,6 +38,7 @@ import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.TransactionStatus
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.interceptor.RollbackRuleAttribute
+import org.springframework.transaction.jta.JtaTransactionManager
 import org.springframework.transaction.support.DefaultTransactionStatus
 
 import javax.sql.DataSource
@@ -49,18 +50,22 @@ class SqlService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     Sql getCurrentTransactionSql(DataSource dataSource) {
-        DataSourceTransactionManager txMgr = null
-        if (transactionManager instanceof ChainedTransactionManager) {
-            txMgr = (DataSourceTransactionManager) ((ChainedTransactionManager) transactionManager).transactionManagers.find { PlatformTransactionManager mgr ->
-                mgr instanceof DataSourceTransactionManager && ((DataSourceTransactionManager) mgr).dataSource == dataSource
-            }
-        } else if (transactionManager instanceof DataSourceTransactionManager) {
-            txMgr = (DataSourceTransactionManager) transactionManager
+        if (transactionManager instanceof JtaTransactionManager) {
+            return new Sql(dataSource)
         } else {
-            throw new RuntimeException("Couldn't find a transaction manager that belongs to the dataSource")
-        }
+            DataSourceTransactionManager txMgr = null
+            if (transactionManager instanceof ChainedTransactionManager) {
+                txMgr = (DataSourceTransactionManager) ((ChainedTransactionManager) transactionManager).transactionManagers.find { PlatformTransactionManager mgr ->
+                    mgr instanceof DataSourceTransactionManager && ((DataSourceTransactionManager) mgr).dataSource == dataSource
+                }
+            } else if (transactionManager instanceof DataSourceTransactionManager) {
+                txMgr = (DataSourceTransactionManager) transactionManager
+            } else {
+                throw new RuntimeException("Couldn't find a transaction manager that belongs to the dataSource")
+            }
 
-        return txMgr ? getCurrentTransactionSql(txMgr) : null
+            return txMgr ? getCurrentTransactionSql(txMgr) : null
+        }
     }
 
     private Connection getCurrentTransactionConnection(DefaultTransactionStatus targetTransactionStatus) {
@@ -74,6 +79,8 @@ class SqlService {
     Sql getCurrentTransactionSql(PlatformTransactionManager targetTransactionManager) {
         if (targetTransactionManager instanceof ChainedTransactionManager) {
             throw new RuntimeException("The passed in transaction manager can't be a ChainedTransactionManager.  Instead, pass in the native transaction manager for the dataSource or use getCurrentTransactionSql(dataSource).")
+        } else if (targetTransactionManager instanceof JtaTransactionManager) {
+            throw new RuntimeException("The passed in transaction manager can't be a JtaTransactionManager.  Use getCurrentTransactionSql(dataSource) instead.")
         }
         // transactionManager and transactionStatus are injected into the
         // method by the @Transactional annotation
