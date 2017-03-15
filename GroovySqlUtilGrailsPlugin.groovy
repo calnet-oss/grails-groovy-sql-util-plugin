@@ -28,7 +28,7 @@
 class GroovySqlUtilGrailsPlugin {
     def group = "edu.berkeley.calnet.grails.plugins"
     // the plugin version
-    def version = "1.2.1-SNAPSHOT" // !!! Change in build.gradle too
+    def version = "1.2.2-SNAPSHOT" // !!! Change in build.gradle too
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.4 > *"
     // resources that are excluded from plugin packaging
