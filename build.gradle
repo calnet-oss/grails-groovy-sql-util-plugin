@@ -1,29 +1,14 @@
-/*
- * Copyright (c) 2016, Regents of the University of California and
- * contributors.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+//
+// This is a Gradle multi-project build.
+// See settings.gradle for the subprojects.
+//
+// The two subprojects are:
+// groovy-sql-util-plugin - The main plugin.
+// groovy-sql-util-test - Tests using the plugin.
+//
+// Gradle Multi-Project documentation is here:
+// https://docs.gradle.org/current/userguide/multi_project_builds.html
+//
 buildscript {
     repositories {
         mavenLocal()
@@ -40,117 +25,37 @@ buildscript {
             }
         }
         jcenter()
+        maven { url "https://repo.grails.org/grails/core" }
         mavenCentral()
     }
     dependencies {
-        classpath "io.spring.gradle:dependency-management-plugin:${spring_depmgmt_version}"
-        classpath "org.grails:grails-gradle-plugin:${grails_gradle_version}"
-        classpath "edu.berkeley.calnet.gradle.plugins:gradle-grails-maven-publish-plugin:${grails_maven_publish_version}"
+        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath "org.grails.plugins:hibernate5:6.0.4"
     }
 }
 
-apply plugin: 'grails'
-apply plugin: 'edu.berkeley.calnet.grails-maven-publish'
-apply plugin: 'maven-publish'
-apply plugin: 'project-report'
-apply plugin: "io.spring.dependency-management"
-
-group = 'edu.berkeley.calnet.grails.plugins'
-version = '1.2.2-SNAPSHOT' // !!! Change in GroovySqlUtilGrailsPlugin.groovy too
-
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
-
-grails {
-    grailsVersion = '2.5.4'
-    groovyVersion = '2.4.4'
-}
-
-repositories {
-    mavenLocal()
-    // If using a Maven proxy, put the property settings in
-    // ~/.gradle/gradle.properties for default_proxy_url,
-    // default_proxy_username and default_proxy_password.
-    if (project.hasProperty("default_proxy_url")) {
-        maven {
-            url project.property("default_proxy_url")
-            credentials {
-                username project.property("default_proxy_username")
-                password project.property("default_proxy_password")
-            }
-        }
-    }
-    jcenter()
-    grails.central()
-    mavenCentral()
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "edu.berkeley.calnet:gradle-grails-bom:${grails.grailsVersion}"
-    }
-}
-
-dependencies {
-    /*****************************************************************
-     * BEGIN STANDARD GRAILS DEPENDENCIES FROM gradle-grails-bom
-     *****************************************************************/
-    provided 'javax.servlet:javax.servlet-api'
-
-    test 'org.spockframework:spock-core'
-    /*****************************************************************
-     * END STANDARD GRAILS DEPENDENCIES FROM gradle-grails-bom
-     *****************************************************************/
-}
-
-grailsMavenPublish.addJavaComponent(project)
-
-jar {
-    metaInf {
-        from "plugin.xml"
-        rename "plugin.xml", "grails-plugin.xml"
-    }
-}
-
-task sourceJar(type: Jar) {
-    from "src/java"
-    from "src/groovy"
-    metaInf {
-        from "plugin.xml"
-        rename "plugin.xml", "grails-plugin.xml"
-    }
-}
-
-// publishing with './gradlew publish'
-publish.dependsOn assemble
-publishToMavenLocal.dependsOn assemble
-publishing {
-    publications {
-        // zip file
-        mavenGrails(MavenPublication) {
-            grailsMavenPublish.addGrailsComponent(project)
-            from components.grails
-            grailsMavenPublish.fixPom(configurations, pom)
-        }
-
-        // jar and sources
-        mavenJava(MavenPublication) {
-            from components.java
-            grailsMavenPublish.fixPom(configurations, pom)
-            artifact sourceJar { classifier "sources" }
-        }
-    }
-
+allprojects {
+    apply plugin: 'groovy'
+    apply plugin: 'idea'
+    group = 'edu.berkeley.calnet.grails.plugins'
+    version = '1.3.0-SNAPSHOT'
+    targetCompatibility = 1.8
+    sourceCompatibility = 1.8
     repositories {
-        maven {
-            // Put the property settings in ~/.gradle/gradle.properties for
-            // default_deploy_url, default_deploy_grails_plugin_repo
-            // default_deploy_username and default_deploy_password.
-            url "${project.property('default_deploy_url')}/${default_deploy_grails_plugin_repo}"
-            credentials {
-                username project.property("default_deploy_user")
-                password project.property("default_deploy_password")
+        mavenLocal()
+        // If using a Maven proxy, put the property settings in
+        // ~/.gradle/gradle.properties for default_proxy_url,
+        // default_proxy_username and default_proxy_password.
+        if (project.hasProperty("default_proxy_url")) {
+            maven {
+                url project.property("default_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
             }
         }
+        jcenter()
+        mavenCentral()
     }
 }

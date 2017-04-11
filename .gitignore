@@ -11,3 +11,4 @@ atlassian-ide-plugin.xml
 *.sha1
 .gradle
 build
+out

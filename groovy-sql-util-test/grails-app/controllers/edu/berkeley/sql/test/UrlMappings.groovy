@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2016-2017, Regents of the University of California and
- * contributors.  All rights reserved.
+ * Copyright (c) 2016, Regents of the University of California and
+ * contributors.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -23,5 +24,20 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-rootProject.name = 'groovy-sql-util'
-include 'groovy-sql-util-plugin', 'groovy-sql-util-test'
+
+package edu.berkeley.sql.test
+
+class UrlMappings {
+
+    static mappings = {
+        "/$controller/$action?/$id?(.$format)?"{
+            constraints {
+                // apply constraints here
+            }
+        }
+
+        "/"(view:"/index")
+        "500"(view:'/error')
+        "404"(view:'/notFound')
+    }
+}

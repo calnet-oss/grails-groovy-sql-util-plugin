@@ -1,0 +1,54 @@
+apply plugin:"org.grails.grails-plugin"
+apply plugin: "maven-publish"
+
+dependencyManagement {
+    imports {
+        mavenBom "org.grails:grails-bom:$grailsVersion"
+    }
+    applyMavenExclusions false
+}
+
+dependencies {
+    provided 'javax.servlet:javax.servlet-api'
+    compileOnly "org.grails:grails-core"
+    compileOnly "org.grails:grails-dependencies"
+    provided "org.grails:grails-plugin-services"
+}
+
+bootRun {
+    jvmArgs('-Dspring.output.ansi.enabled=always')
+}
+// enable if you wish to package this plugin as a standalone application
+bootRepackage.enabled = false
+
+jar {
+    from { ["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"] }
+}
+task sourceJar(type: Jar) {
+    from sourceSets.main.allGroovy
+    from { ["../LICENSE.txt", "../NOTICE_THIRD_PARTY.txt"] }
+}
+// publishing with './gradlew publish'
+publish.dependsOn assemble
+publishToMavenLocal.dependsOn assemble
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId rootProject.name
+            from components.java
+            artifact sourceJar { classifier "sources" }
+        }
+    }
+    repositories {
+        maven {
+            // Put the property settings in ~/.gradle/gradle.properties for
+            // default_deploy_url, default_deploy_grails_plugin_repo
+            // default_deploy_username and default_deploy_password.
+            url "${project.property('default_deploy_url')}/${default_deploy_grails_plugin_repo}"
+            credentials {
+                username project.property("default_deploy_user")
+                password project.property("default_deploy_password")
+            }
+        }
+    }
+}
