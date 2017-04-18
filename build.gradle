@@ -35,12 +35,11 @@ buildscript {
 }
 
 allprojects {
-    apply plugin: 'groovy'
     apply plugin: 'idea'
+
     group = 'edu.berkeley.calnet.grails.plugins'
     version = '1.3.0-SNAPSHOT'
-    targetCompatibility = 1.8
-    sourceCompatibility = 1.8
+
     repositories {
         mavenLocal()
         // If using a Maven proxy, put the property settings in
