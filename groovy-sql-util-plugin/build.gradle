@@ -13,10 +13,10 @@ dependencyManagement {
 }
 
 dependencies {
-    provided 'javax.servlet:javax.servlet-api'
+    compileOnly 'javax.servlet:javax.servlet-api'
     compileOnly "org.grails:grails-core"
     compileOnly "org.grails:grails-dependencies"
-    provided "org.grails:grails-plugin-services"
+    compileOnly "org.grails:grails-plugin-services"
 }
 
 bootRun {
