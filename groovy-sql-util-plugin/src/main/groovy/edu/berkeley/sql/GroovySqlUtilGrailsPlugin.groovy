@@ -30,7 +30,7 @@ package edu.berkeley.sql
 
 import grails.plugins.Plugin
 
-class GroovySqlUtilPluginGrailsPlugin extends Plugin {
+class GroovySqlUtilGrailsPlugin extends Plugin {
 
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "3.2.5 > *"
