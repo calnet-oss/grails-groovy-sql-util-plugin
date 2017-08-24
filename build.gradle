@@ -34,11 +34,11 @@ buildscript {
     }
 }
 
+project.group = 'edu.berkeley.calnet.grails.plugins'
+project.version = '1.3.0-SNAPSHOT'
+
 allprojects {
     apply plugin: 'idea'
-
-    group = 'edu.berkeley.calnet.grails.plugins'
-    version = '1.3.0-SNAPSHOT'
 
     repositories {
         mavenLocal()
