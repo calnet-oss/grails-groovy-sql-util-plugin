@@ -38,7 +38,7 @@ publishToMavenLocal.dependsOn assemble
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId rootProject.name
+            artifactId parent.name
             from components.java
             artifact sourceJar { classifier "sources" }
         }
