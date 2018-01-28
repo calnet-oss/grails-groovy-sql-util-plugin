@@ -39,6 +39,8 @@ publishing {
     publications {
         maven(MavenPublication) {
             artifactId parent.name
+            version projectVersion
+            group projectGroup
             from components.java
             artifact sourceJar { classifier "sources" }
         }
