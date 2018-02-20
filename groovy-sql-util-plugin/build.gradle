@@ -18,7 +18,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath("org.grails:grails-gradle-plugin:$grailsVersion") {
+            exclude group: "xerces", module: "xercesImpl"
+        }
         classpath "org.grails.plugins:hibernate5:6.0.4"
     }
 }
