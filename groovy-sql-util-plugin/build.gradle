@@ -21,7 +21,6 @@ buildscript {
         classpath("org.grails:grails-gradle-plugin:$grailsVersion") {
             exclude group: "xerces", module: "xercesImpl"
         }
-        classpath "org.grails.plugins:hibernate5:6.0.4"
     }
 }
 
@@ -32,22 +31,26 @@ apply plugin: "maven-publish"
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
 
-dependencyManagement {
-    imports {
-        mavenBom "org.grails:grails-bom:$grailsVersion"
-    }
-    applyMavenExclusions false
-}
-
 dependencies {
-    compileOnly 'javax.servlet:javax.servlet-api'
+    compileOnly "org.springframework.boot:spring-boot-starter-logging"
+    compileOnly "org.springframework.boot:spring-boot-autoconfigure"
     compileOnly "org.grails:grails-core"
-    compileOnly "org.grails:grails-dependencies"
+    compileOnly "org.springframework.boot:spring-boot-starter-actuator"
+    compileOnly "org.springframework.boot:spring-boot-starter-tomcat"
+    compileOnly "org.grails:grails-web-boot"
+    compileOnly "org.grails:grails-logging"
+    compileOnly "org.grails:grails-plugin-databinding"
+    compileOnly "org.grails:grails-plugin-services"
+    compileOnly "org.grails:grails-plugin-url-mappings"
+    compileOnly "org.grails:grails-plugin-interceptors"
     compileOnly "org.grails:grails-plugin-services"
 }
 
 bootRun {
     jvmArgs('-Dspring.output.ansi.enabled=always')
+    addResources = true
+    String springProfilesActive = 'spring.profiles.active'
+    systemProperty springProfilesActive, System.getProperty(springProfilesActive)
 }
 // enable if you wish to package this plugin as a standalone application
 bootRepackage.enabled = false

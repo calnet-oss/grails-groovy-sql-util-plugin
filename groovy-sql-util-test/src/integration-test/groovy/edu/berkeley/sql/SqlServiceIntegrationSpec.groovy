@@ -28,8 +28,8 @@
 package edu.berkeley.sql
 
 import grails.core.GrailsApplication
-import grails.test.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.gorm.transactions.Rollback
+import grails.testing.mixin.integration.Integration
 import groovy.sql.Sql
 import spock.lang.Specification
 

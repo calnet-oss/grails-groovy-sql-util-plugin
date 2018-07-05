@@ -1,3 +1,7 @@
-// Place your Spring DSL code here
+import org.springframework.jdbc.datasource.DataSourceTransactionManager
+
 beans = {
+    transactionManager(DataSourceTransactionManager) {
+        dataSource = ref('dataSource')
+    }
 }
