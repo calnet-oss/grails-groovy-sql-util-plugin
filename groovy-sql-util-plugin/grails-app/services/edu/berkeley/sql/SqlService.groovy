@@ -27,11 +27,11 @@
 
 package edu.berkeley.sql
 
-import grails.transaction.GrailsTransactionTemplate
-import grails.transaction.Transactional
+import grails.gorm.transactions.GrailsTransactionAttribute
+import grails.gorm.transactions.GrailsTransactionTemplate
+import grails.gorm.transactions.Transactional
 import groovy.sql.Sql
 import org.grails.transaction.ChainedTransactionManager
-import org.grails.transaction.GrailsTransactionAttribute
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition

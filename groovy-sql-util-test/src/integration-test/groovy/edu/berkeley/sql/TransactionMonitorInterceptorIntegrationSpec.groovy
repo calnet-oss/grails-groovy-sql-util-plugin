@@ -27,7 +27,7 @@
 package edu.berkeley.sql
 
 import grails.core.GrailsApplication
-import grails.test.mixin.integration.Integration
+import grails.testing.mixin.integration.Integration
 import org.apache.commons.logging.Log
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import spock.lang.Specification
