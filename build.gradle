@@ -33,7 +33,19 @@ allprojects {
         else {
             jcenter()
         }
-        maven { url "https://repo.grails.org/grails/core" }
+        // grails-core
+        if (project.hasProperty("grailsCore_proxy_url")) {
+            maven {
+                url project.property("grailsCore_proxy_url")
+                credentials {
+                    username project.property("default_proxy_username")
+                    password project.property("default_proxy_password")
+                }
+            }
+        }
+        else {
+            maven { url "https://repo.grails.org/grails/core" }
+        }
     }
 }
 
